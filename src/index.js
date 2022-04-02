@@ -22,27 +22,37 @@ function checksExistsUserAccount(request, response, next) {
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  const {newTodo} = request.newTodo;
+  const {user} = request;
+
+  if(user.pro){
+    return next();
+  }else if(!user.pro && user.todos.length + 1 <= 10){
+    return next();
+  }
+  return response.status(403).json({error: "10 todos already created, upgrate to pro plan"});
 
 }
 
 function checksTodoExists(request, response, next) {
   const {username} = request.headers;
-  const {id} = request.params;
+  const {id: todoId} = request.params;
+
 
   const user = users.find(user => user.username === username);
   if(!user){
     return response.status(404).json({error: "username not found"});
   }
 
-  
+  if(!validate(todoId)){
+    return response.status(400).json({error: "todo ID is invalid"});
+  }
 
-  const todo = user.todos.find(todo => todo.id === id);
-  if(!todo){
+  const userTodo = user.todos.find(todo => todo.id === todoId);
+  if(!userTodo){
     return response.status(404).json({error: "todo not found"});
   }
 
-  request.todo = todo;
+  request.todo = userTodo;
   request.user = user;
   return next();
 }
